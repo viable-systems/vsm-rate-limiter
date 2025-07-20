@@ -38,20 +38,13 @@ defmodule VsmRateLimiter.Adapters.Hammer do
   @doc """
   Get current status from Hammer.
   """
-  def get_status(key) do
-    case Hammer.inspect_bucket(key) do
-      {bucket_info, count, created_at, updated_at} ->
-        %{
-          exists: true,
-          current_count: count,
-          created_at: created_at,
-          updated_at: updated_at,
-          bucket_info: bucket_info,
-          adapter: :hammer
-        }
-      nil ->
-        %{exists: false, adapter: :hammer}
-    end
+  def get_status(_key) do
+    # Hammer doesn't provide a direct status API, so we'll return a simplified status
+    %{
+      exists: true,
+      adapter: :hammer,
+      info: "Hammer doesn't expose bucket internals"
+    }
   end
   
   @doc """

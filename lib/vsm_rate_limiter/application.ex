@@ -30,9 +30,9 @@ defmodule VsmRateLimiter.Application do
       # Subsystem manager
       VsmRateLimiter.SubsystemManager,
       
-      # Adapter managers
-      VsmRateLimiter.Adapters.ExRated.Supervisor,
-      VsmRateLimiter.Adapters.Hammer.Supervisor
+      # Adapter managers - only start if needed
+      # VsmRateLimiter.Adapters.ExRated.Supervisor,
+      # VsmRateLimiter.Adapters.Hammer.Supervisor
     ]
 
     opts = [strategy: :one_for_one, name: VsmRateLimiter.Supervisor]

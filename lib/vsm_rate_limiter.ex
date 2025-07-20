@@ -29,7 +29,7 @@ defmodule VsmRateLimiter do
   alias VsmRateLimiter.{Core, Algedonic, SubsystemManager}
   
   @type subsystem :: atom()
-  @type identifier :: String.t()
+  @type identifier_t :: String.t()
   @type rate_limit :: {pos_integer(), time_unit()}
   @type time_unit :: :requests_per_second | :requests_per_minute | :requests_per_hour
   
@@ -44,20 +44,20 @@ defmodule VsmRateLimiter do
   @doc """
   Check if a request is allowed for the given subsystem and identifier.
   """
-  @spec check_rate(subsystem(), identifier()) :: {:ok, pos_integer()} | {:error, :rate_limited}
+  @spec check_rate(subsystem(), identifier_t()) :: {:ok, pos_integer()} | {:error, :rate_limited}
   def check_rate(subsystem, identifier) do
     with {:ok, config} <- SubsystemManager.get_config(subsystem),
-         {:ok, result} <- Core.check_rate(subsystem, identifier, config) do
+         {:ok, remaining} <- Core.check_rate(subsystem, identifier, config) do
       # Check algedonic threshold
-      check_algedonic_threshold(subsystem, result, config)
-      result
+      check_algedonic_threshold(subsystem, {:ok, remaining}, config)
+      {:ok, remaining}
     end
   end
   
   @doc """
   Get current rate limit status for a subsystem.
   """
-  @spec get_status(subsystem(), identifier()) :: map()
+  @spec get_status(subsystem(), identifier_t()) :: map()
   def get_status(subsystem, identifier) do
     Core.get_status(subsystem, identifier)
   end
@@ -65,7 +65,7 @@ defmodule VsmRateLimiter do
   @doc """
   Reset rate limit for a specific identifier in a subsystem.
   """
-  @spec reset(subsystem(), identifier()) :: :ok
+  @spec reset(subsystem(), identifier_t()) :: :ok
   def reset(subsystem, identifier) do
     Core.reset(subsystem, identifier)
   end
@@ -74,7 +74,7 @@ defmodule VsmRateLimiter do
   Configure the adapter to use (ex_rated or hammer).
   """
   @spec use_adapter(:ex_rated | :hammer) :: :ok
-  def use_adapter(adapter) when adapter in [:ex_rated, :hammer] do
+  def use_adapter(adapter) when adapter in [:ex_rated, :hammer, :token_bucket] do
     Application.put_env(:vsm_rate_limiter, :adapter, adapter)
   end
   

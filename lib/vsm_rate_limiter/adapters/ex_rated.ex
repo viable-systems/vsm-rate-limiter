@@ -39,7 +39,8 @@ defmodule VsmRateLimiter.Adapters.ExRated do
   Get current status from ExRated.
   """
   def get_status(key) do
-    case ExRated.inspect_bucket(key) do
+    # ExRated requires scale_ms and limit parameters for inspect_bucket
+    case ExRated.inspect_bucket(key, 60_000, 100) do
       {_, count, _, _, _} = bucket ->
         %{
           exists: true,

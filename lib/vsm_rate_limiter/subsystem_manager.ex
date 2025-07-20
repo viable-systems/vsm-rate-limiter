@@ -144,7 +144,7 @@ defmodule VsmRateLimiter.SubsystemManager do
     Keyword.put(base_config, :rate_limit, rate_limit)
   end
   
-  defp calculate_attenuated_config(subsystem, base_config, state) do
+  defp calculate_attenuated_config(subsystem, base_config, _state) do
     # Implement Ashby's Law of Requisite Variety
     # The variety of the controller must match the variety of the system
     
