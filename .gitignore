@@ -21,3 +21,12 @@ vsm_rate_limiter-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Ignore .elixir_ls directory
+/.elixir_ls/
+
+# macOS
+.DS_Store
+
+# Claude hooks logs
+/.claude/
