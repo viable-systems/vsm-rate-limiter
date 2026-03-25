@@ -1,122 +1,71 @@
-# VSM Rate Limiter
+# vsm_rate_limiter
 
-A sophisticated rate limiting library for Elixir that implements Viable System Model (VSM) principles with variety attenuation, pluggable adapters, and algedonic signaling.
+Elixir rate limiter with pluggable backends (token bucket, ExRated, Hammer) and VSM subsystem-aware rate policies. Includes algedonic alerting when usage crosses configurable thresholds.
 
-## Features
+## Status
 
-- **VSM-based Architecture**: Rate limiting organized by VSM subsystems (S1-S5)
-- **Variety Attenuation**: Implements Ashby's Law of Requisite Variety
-- **Multiple Adapters**: Support for token bucket, ExRated, and Hammer
-- **Algedonic System**: Critical alerts and pain/pleasure signals
-- **Subsystem-specific Limits**: Different rate limits for each VSM subsystem
-- **Telemetry Integration**: Built-in metrics and monitoring
+- Version: 0.1.0
+- OTP app with supervision tree
+- 1 test file; coverage unknown
+- Published to Hex (no organization scoping)
+
+## What it does
+
+Routes rate-limit checks through a configurable adapter. Each VSM subsystem (S1 through S5) can have its own rate limit and threshold. When usage ratio crosses the algedonic threshold, an alert is triggered.
+
+## Modules
+
+| Module | Purpose |
+|--------|---------|
+| `VsmRateLimiter` | Public API: configure_subsystem, check_rate, get_status, reset, use_adapter |
+| `VsmRateLimiter.Core` | Delegates to the active adapter based on application config |
+| `VsmRateLimiter.TokenBucket` | Built-in token bucket implementation |
+| `VsmRateLimiter.Adapters.ExRated` | Adapter for the ex_rated library |
+| `VsmRateLimiter.Adapters.Hammer` | Adapter for the Hammer library |
+| `VsmRateLimiter.Algedonic` | Fires alerts when usage exceeds threshold |
+| `VsmRateLimiter.SubsystemManager` | Stores per-subsystem configuration |
+| `VsmRateLimiter.Adapter` | Behaviour definition for adapters |
+
+## Supported VSM subsystems
+
+| Key | Subsystem | Typical use |
+|-----|-----------|-------------|
+| `:s1_environment` | Operations | High-volume environment monitoring |
+| `:s2_coordination` | Coordination | Inter-unit coordination messages |
+| `:s3_control` | Control | Operational control decisions |
+| `:s3_star_audit` | Audit | Compliance and audit checks |
+| `:s4_intelligence` | Intelligence | Intelligence gathering |
+| `:s4_star_research` | Research | R&D queries |
+| `:s5_policy` | Policy | Low volume, high priority |
 
 ## Installation
 
-Add `vsm_rate_limiter` to your list of dependencies in `mix.exs`:
-
 ```elixir
 def deps do
-  [
-    {:vsm_rate_limiter, "~> 0.1.0"}
-  ]
+  [{:vsm_rate_limiter, "~> 0.1.0"}]
 end
 ```
 
 ## Usage
 
-### Basic Rate Limiting
-
 ```elixir
 # Configure a subsystem
-VsmRateLimiter.configure_subsystem(:s1_environment, 
+VsmRateLimiter.configure_subsystem(:s1_environment,
   rate_limit: {100, :requests_per_minute},
   algedonic_threshold: 0.8
 )
 
-# Check rate limit
+# Check rate
 case VsmRateLimiter.check_rate(:s1_environment, "user_123") do
-  {:ok, remaining} -> 
-    IO.puts("Request allowed. #{remaining} requests remaining")
-  {:error, :rate_limited} ->
-    IO.puts("Rate limit exceeded")
+  {:ok, remaining} -> proceed(remaining)
+  {:error, :rate_limited} -> reject()
 end
-```
 
-### Using Different Adapters
-
-```elixir
-# Use ExRated adapter
-VsmRateLimiter.use_adapter(:ex_rated)
-
-# Use Hammer adapter
+# Switch adapter at runtime
 VsmRateLimiter.use_adapter(:hammer)
-
-# Default is token bucket
-VsmRateLimiter.use_adapter(:token_bucket)
 ```
-
-### VSM Subsystems
-
-The library supports all VSM subsystems:
-
-- `:s1_environment` - Environment monitoring (highest volume)
-- `:s2_coordination` - Coordination between units
-- `:s3_control` - Operational control
-- `:s3_star_audit` - Audit and compliance
-- `:s4_intelligence` - Intelligence gathering
-- `:s4_star_research` - Research and development
-- `:s5_policy` - Policy decisions (lowest volume, highest priority)
-
-### Algedonic Alerts
-
-Register handlers for critical system events:
-
-```elixir
-VsmRateLimiter.Algedonic.register_handler(fn alert, severity, metadata ->
-  case severity do
-    :critical -> 
-      # Send emergency notification
-      notify_ops_team(alert)
-    :high ->
-      # Log to monitoring system
-      Logger.warning("High severity alert", alert: alert)
-    _ ->
-      :ok
-  end
-end)
-```
-
-### Monitoring
-
-The library emits telemetry events for monitoring:
-
-```elixir
-# Attach to telemetry events
-:telemetry.attach(
-  "rate-limiter-handler",
-  [:vsm_rate_limiter, :request, :allowed],
-  &handle_event/4,
-  nil
-)
-
-def handle_event([:vsm_rate_limiter, :request, :allowed], measurements, metadata, _config) do
-  IO.puts("Request allowed with #{measurements.remaining} remaining")
-end
-```
-
-## Architecture
-
-The VSM Rate Limiter implements key cybernetic principles:
-
-1. **Variety Attenuation**: Reduces the variety of incoming requests to match system capacity
-2. **Hierarchical Control**: Different rate limits based on VSM subsystem hierarchy
-3. **Algedonic Signaling**: Pain/pleasure signals for critical events
-4. **Adaptive Behavior**: Dynamic rate limiting based on system load
 
 ## Configuration
-
-Configure in your application:
 
 ```elixir
 config :vsm_rate_limiter,
@@ -125,20 +74,14 @@ config :vsm_rate_limiter,
   algedonic_threshold: 0.8
 ```
 
-## Testing
+## Limitations
 
-```bash
-mix test
-```
-
-## Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Create new Pull Request
+- Adapter switching at runtime uses `Application.put_env`, which is a global side effect
+- SubsystemManager state storage mechanism is not visible from the public API; likely ETS or Agent
+- Only 1 test file for the entire library
+- No benchmarks comparing adapter performance
+- No distributed rate limiting; each node operates independently
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT
